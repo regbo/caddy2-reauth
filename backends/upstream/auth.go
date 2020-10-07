@@ -185,8 +185,10 @@ func copyRequestHeaders(org *http.Request, req *http.Request, nameFilter string)
 			}
 		}
 
-	}else if(org.Header.has(nameFilter)) {
-		req.Header.Add("X-Forward-Auth-Header-"+nameFilter, org.Header.Get(nameFilter))
+	}else  {
+		for _, value := range org.Header.Values(nameFilter) {
+			req.Header.Add("X-Forward-Auth-Header-"+name, value)
+		}
 	}
 
 }
