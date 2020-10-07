@@ -87,7 +87,7 @@ func (h Upstream) Validate() error {
 
 // Authenticate fulfils the backend interface
 func (h Upstream) Authenticate(r *http.Request) (string, error) {
-	un, pw, k := r.BasicAuth()
+	un:="unknown"
 	
 	c := &http.Client{
 		Timeout: h.Timeout.Duration,
@@ -102,20 +102,12 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 	}
+	
+	data := url.Values{}
+	h.copyRequest(r, data)
+	
+	resp, err := http.PostForm(h.URL.String(), data)
 
-	req, err := http.NewRequest("GET", h.URL.String(), nil)
-	if err != nil {
-		log.Printf("new request failed: %s",  h.URL.String())
-		return "", err
-	}
-
-	if k {
-		req.SetBasicAuth(un, pw)
-	}
-
-	h.copyRequest(r, req)
-
-	resp, err := c.Do(req)
 	if err != nil {
 		log.Printf("url execute failed: %s", resp.StatusCode)
 		return "", err
@@ -138,36 +130,34 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 	return un, nil
 }
 
-func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
-	query := req.URL.Query();
-	if h.isForwardHeadersWildcard(org,req) {
-		copyRequestHeaders(org, query, "*")	
+func (h Upstream) copyRequest(org *http.Request, data url.Values) {
+	if h.isForwardHeadersWildcard() {
+		copyRequestHeaders(org, data, "*")	
 	}else{
 		for _, header := range h.Forward.Headers {
-			copyRequestHeaders(org, query, header)	
+			copyRequestHeaders(org, data, header)	
 		}
 	}
 		
 	if h.Forward.Host {
-		query.Add("host", org.Host)
+		data.Add("host", org.Host)
 	}
 
 	if h.Forward.RequestURI {
-		query.Add("requestURI", org.RequestURI)
+		data.Add("requestURI", org.RequestURI)
 	}
 
 	if h.Forward.Method {
-		query.Add("method", org.Method)
+		data.Add("method", org.Method)
 	}
 
 	if h.Forward.IP {
-		query.Add("ip", org.RemoteAddr)
+		data.Add("ip", org.RemoteAddr)
 	}
-	req.URL.RawQuery=query.Encode()
 
 }
 
-func (h Upstream) isForwardHeadersWildcard(org *http.Request, req *http.Request) bool {
+func (h Upstream) isForwardHeadersWildcard() bool {
 	for _, header := range h.Forward.Headers {
 		if header == "*" {
 			return true
@@ -177,17 +167,17 @@ func (h Upstream) isForwardHeadersWildcard(org *http.Request, req *http.Request)
 	return false
 }
 
-func copyRequestHeaders(org *http.Request, query url.Values, nameFilter string) {
+func copyRequestHeaders(org *http.Request, data url.Values, nameFilter string) {
 	if nameFilter == "*" {
 		for name, values := range org.Header {
 			for _, value := range values {
-				query.Add("header-"+name, value)
+				data.Add("header-"+name, value)
 			}
 		}
 
 	} else {
 		for _, value := range org.Header.Values(nameFilter) {
-					query.Add("header-"+nameFilter, value)
+					data.Add("header-"+nameFilter, value)
 		}
 	}
 
