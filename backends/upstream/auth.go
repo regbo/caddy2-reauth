@@ -139,23 +139,14 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 
 func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
 	
-	for _, header := range h.Forward.Headers {
-		if header == "*" {
-			for name, values := range org.Header {
-				for _, value := range values {
-					req.Header.Add("X-Forward-Auth-Header-"+name, value)
-				}
-			}
-	
-		}else{
-			name := header
-			value := org.Header.Get(name)
-			if(value != ""){
-				req.Header.Add("X-Forward-Auth-Header-"+name, value)
-			}
+	if h.isForwardHeadersWildcard(org,req) {
+		copyRequestHeaders(org, req, "*")	
+	}else{
+		for _, header := range h.Forward.Headers {
+			copyRequestHeaders(org, req, header)	
 		}
 	}
-	
+		
 	if h.Forward.Host {
 		req.Header.Add("X-Forward-Auth-Host", org.Host)
 	}
@@ -173,6 +164,29 @@ func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
 	}
 	
 
+}
 
+func (h Upstream) isForwardHeadersWildcard(org *http.Request, req *http.Request) bool {
+	for _, header := range h.Forward.Headers {
+		if header == "*" {
+			return true
+		}
+	}
+	return false
+}
+
+func copyRequestHeaders(org *http.Request, req *http.Request, nameFilter string) {
+
+
+	if nameFilter == "*" {
+		for name, values := range org.Header {
+			for _, value := range values {
+				req.Header.Add("X-Forward-Auth-Header-"+name, value)
+			}
+		}
+
+	}else if(org.Header.has(nameFilter)) {
+		req.Header.Add("X-Forward-Auth-Header-"+nameFilter, org.Header.Get(nameFilter))
+	}
 
 }
