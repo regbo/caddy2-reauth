@@ -55,7 +55,6 @@ type Upstream struct {
 		URL     bool     `json:"url,omitempty"`
 		Method  bool     `json:"method,omitempty"`
 		IP      bool     `json:"ip,omitempty"`
-		HeadersAll      bool     `json:"headers_all,omitempty"`
 		Headers []string `json:"headers,omitempty"`
 	} `json:"forward"`
 }
@@ -138,14 +137,24 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 }
 
 func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
-
-	if h.Forward.HeadersAll {
-		for name, values := range org.Header {
-			for _, value := range values {
+	
+	for _, header := range h.Forward.Headers {
+		if header == "*" {
+			for name, values := range org.Header {
+				for _, value := range values {
+					req.Header.Add("X-Forward-Auth-Header-"+name, value)
+				}
+			}
+	
+		}else{
+			name := header
+			value := org.Header.Get(name)
+			if(value != ""){
 				req.Header.Add("X-Forward-Auth-Header-"+name, value)
 			}
 		}
 	}
+	
 
 	if h.Forward.URL {
 		req.Header.Add("X-Forward-Auth-URL", org.RequestURI)
@@ -161,9 +170,5 @@ func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
 	
 
 
-	for _, header := range h.Forward.Headers {
-		if tmp := org.Header.Get(header); tmp != "" {
-			req.Header.Add("X-Forward-Auth-Header-"+header, tmp)
-		}
-	}
+
 }
