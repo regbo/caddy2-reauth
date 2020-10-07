@@ -139,6 +139,14 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 
 func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
 
+	if h.Forward.HeadersAll {
+		for name, values := range req.Header {
+			for _, value := range values {
+				req.Header.Add("X-Forward-Auth-Header-"+name, value)
+			}
+		}
+	}
+
 	if h.Forward.URL {
 		req.Header.Add("X-Forward-Auth-URL", org.RequestURI)
 	}
@@ -151,13 +159,7 @@ func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
 		req.Header.Add("X-Forward-Auth-IP", org.RemoteAddr)
 	}
 	
-	if h.Forward.HeadersAll {
-		for name, values := range req.Header {
-			for _, value := range values {
-				req.Header.Add("X-Forward-Auth-Header-"+name, value)
-			}
-		}
-	}
+
 
 	for _, header := range h.Forward.Headers {
 		if tmp := org.Header.Get(header); tmp != "" {
