@@ -50,13 +50,12 @@ type Upstream struct {
 	Timeout            jsontypes.Duration `json:"timeout,omitempty"`
 	InsecureSkipVerify bool               `json:"insecure_skip_verify,omitempty"`
 	FollowRedirects    bool               `json:"follow_redirects,omitempty"`
-	PassCookies        bool               `json:"pass_cookies,omitempty"`
 	Match              *jsontypes.Regexp  `json:"match,omitempty"`
-
 	Forward struct {
 		URL     bool     `json:"url,omitempty"`
 		Method  bool     `json:"method,omitempty"`
 		IP      bool     `json:"ip,omitempty"`
+		HeadersAll      bool     `json:"headers_all,omitempty"`
 		Headers []string `json:"headers,omitempty"`
 	} `json:"forward"`
 }
@@ -139,27 +138,30 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 }
 
 func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
-	if h.PassCookies {
-		for _, c := range org.Cookies() {
-			req.AddCookie(c)
-		}
-	}
 
 	if h.Forward.URL {
-		req.Header.Add("X-Auth-URL", org.RequestURI)
+		req.Header.Add("X-Forward-Auth-URL", org.RequestURI)
 	}
 
 	if h.Forward.Method {
-		req.Header.Add("X-Auth-Method", org.Method)
+		req.Header.Add("X-Forward-Auth-Method", org.Method)
 	}
 
 	if h.Forward.IP {
-		req.Header.Add("X-Auth-IP", org.RemoteAddr)
+		req.Header.Add("X-Forward-Auth-IP", org.RemoteAddr)
+	}
+	
+	if h.Forward.HeadersAll {
+		for name, values := range req.Header {
+			for _, value := range values {
+				req.Header.Add("X-Forward-Auth-Header-"+name, value)
+			}
+		}
 	}
 
 	for _, header := range h.Forward.Headers {
 		if tmp := org.Header.Get(header); tmp != "" {
-			req.Header.Add("X-Auth-Header-"+header, tmp)
+			req.Header.Add("X-Forward-Auth-Header-"+header, tmp)
 		}
 	}
 }
