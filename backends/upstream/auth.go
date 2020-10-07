@@ -52,7 +52,7 @@ type Upstream struct {
 	FollowRedirects    bool               `json:"follow_redirects,omitempty"`
 	Match              *jsontypes.Regexp  `json:"match,omitempty"`
 	Forward struct {
-		URL     bool     `json:"url,omitempty"`
+		RequestURI     bool     `json:"request_uri,omitempty"`
 		Host     bool     `json:"host,omitempty"`
 		Method  bool     `json:"method,omitempty"`
 		IP      bool     `json:"ip,omitempty"`
@@ -160,8 +160,8 @@ func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
 		req.Header.Add("X-Forward-Auth-Host", org.Host)
 	}
 
-	if h.Forward.URL {
-		req.Header.Add("X-Forward-Auth-URL", org.RequestURI)
+	if h.Forward.RequestURI {
+		req.Header.Add("X-Forward-Auth-RequestURI", org.RequestURI)
 	}
 
 	if h.Forward.Method {
