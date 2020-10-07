@@ -1,4 +1,4 @@
-module github.com/freman/caddy2-reauth
+module github.com/regbo/caddy2-reauth
 
 go 1.14
 
