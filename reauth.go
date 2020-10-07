@@ -56,7 +56,7 @@ func (r Reauth) Authenticate(w http.ResponseWriter, req *http.Request) (caddyaut
 	for _, b := range r.Backends {
 		user, err := b.Authenticate(req)
 		if err != nil {
-			log.PrintF("authenticate error: %s", err)
+			log.Printf("authenticate error: %s", err)
 			return caddyauth.User{}, false, err
 		}
 		if user != "" {
