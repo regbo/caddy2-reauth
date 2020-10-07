@@ -3,7 +3,7 @@ package status
 import (
 	"net/http"
 
-	"github.com/freman/caddy2-reauth/failures"
+	"github.com/regbo/caddy2-reauth/failures"
 )
 
 // FailureMode name

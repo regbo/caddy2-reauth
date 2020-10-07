@@ -27,7 +27,7 @@ package simple
 import (
 	"net/http"
 
-	"github.com/freman/caddy2-reauth/backends"
+	"github.com/regbo/caddy2-reauth/backends"
 	"golang.org/x/crypto/bcrypt"
 )
 

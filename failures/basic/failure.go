@@ -3,7 +3,7 @@ package basic
 import (
 	"net/http"
 
-	"github.com/freman/caddy2-reauth/failures"
+	"github.com/regbo/caddy2-reauth/failures"
 )
 
 type Basic struct {

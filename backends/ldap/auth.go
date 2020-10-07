@@ -33,8 +33,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/freman/caddy2-reauth/backends"
-	"github.com/freman/caddy2-reauth/jsontypes"
+	"github.com/regbo/caddy2-reauth/backends"
+	"github.com/regbo/caddy2-reauth/jsontypes"
 
 	ldp "github.com/go-ldap/ldap/v3"
 )
