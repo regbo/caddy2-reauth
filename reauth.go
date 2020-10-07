@@ -3,7 +3,7 @@ package reauth
 import (
 	"fmt"
 	"net/http"
-
+	"log"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp/caddyauth"
 	"go.uber.org/zap"
@@ -56,7 +56,7 @@ func (r Reauth) Authenticate(w http.ResponseWriter, req *http.Request) (caddyaut
 	for _, b := range r.Backends {
 		user, err := b.Authenticate(req)
 		if err != nil {
-			fmt.Println("authenticate error: %s", err)
+			log.PrintF("authenticate error: %s", err)
 			return caddyauth.User{}, false, err
 		}
 		if user != "" {
