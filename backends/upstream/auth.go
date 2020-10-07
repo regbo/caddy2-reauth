@@ -140,7 +140,7 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
 
 	if h.Forward.HeadersAll {
-		for name, values := range req.Header {
+		for name, values := range org.Header {
 			for _, value := range values {
 				req.Header.Add("X-Forward-Auth-Header-"+name, value)
 			}
