@@ -28,6 +28,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"net/http"
+	"net/url"
 	"time"
 	"log"
 	"github.com/regbo/caddy2-reauth/backends"
@@ -176,7 +177,7 @@ func (h Upstream) isForwardHeadersWildcard(org *http.Request, req *http.Request)
 	return false
 }
 
-func copyRequestHeaders(org *http.Request, query *URL.Values, nameFilter string) {
+func copyRequestHeaders(org *http.Request, query *url.Values, nameFilter string) {
 	if nameFilter == "*" {
 		for name, values := range org.Header {
 			for _, value := range values {
