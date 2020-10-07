@@ -128,7 +128,8 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 	if h.Match != nil && h.Match.MatchString(resp.Request.URL.String()) {
 		return "", nil
 	}
-
+	if(un=="")
+		un="unknown"
 	return un, nil
 }
 
