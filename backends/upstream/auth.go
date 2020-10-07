@@ -132,8 +132,9 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 		log.Printf("match check failed: %s", resp.Request.URL.String())
 		return "", nil
 	}
-	if(un=="")
-		un="unknown"
+	if(un==""){
+		return "unknown", nil
+	}
 	return un, nil
 }
 
