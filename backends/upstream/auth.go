@@ -152,7 +152,7 @@ func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
 	}
 
 	if h.Forward.RequestURI {
-		req.Header.Add("X-Forward-Auth-RequestURI", org.RequestURI)
+		req.Header.Add("X-Forward-Auth-Requesturi", org.RequestURI)
 	}
 
 	if h.Forward.Method {
