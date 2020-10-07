@@ -172,12 +172,11 @@ func (h Upstream) isForwardHeadersWildcard(org *http.Request, req *http.Request)
 			return true
 		}
 	}
+
 	return false
 }
 
 func copyRequestHeaders(org *http.Request, req *http.Request, nameFilter string) {
-
-
 	if nameFilter == "*" {
 		for name, values := range org.Header {
 			for _, value := range values {
@@ -185,9 +184,9 @@ func copyRequestHeaders(org *http.Request, req *http.Request, nameFilter string)
 			}
 		}
 
-	}else  {
+	} else {
 		for _, value := range org.Header.Values(nameFilter) {
-			req.Header.Add("X-Forward-Auth-Header-"+name, value)
+			req.Header.Add("X-Forward-Auth-Header-"+nameFilter, value)
 		}
 	}
 
