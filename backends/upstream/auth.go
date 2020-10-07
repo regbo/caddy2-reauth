@@ -88,10 +88,7 @@ func (h Upstream) Validate() error {
 // Authenticate fulfils the backend interface
 func (h Upstream) Authenticate(r *http.Request) (string, error) {
 	un, pw, k := r.BasicAuth()
-	if !(k || h.PassCookies) {
-		return "", nil
-	}
-
+	
 	c := &http.Client{
 		Timeout: h.Timeout.Duration,
 	}
