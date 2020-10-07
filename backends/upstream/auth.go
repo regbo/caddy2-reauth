@@ -28,7 +28,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"net/http"
-	"net/url"
 	"time"
 	"log"
 	"github.com/regbo/caddy2-reauth/backends"
