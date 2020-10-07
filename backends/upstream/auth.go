@@ -105,6 +105,7 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 
 	req, err := http.NewRequest("GET", h.URL.String(), nil)
 	if err != nil {
+		fmt.Println("new request failed: %s",  h.URL.String())
 		return "", err
 	}
 
@@ -116,16 +117,19 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 
 	resp, err := c.Do(req)
 	if err != nil {
+		fmt.Println("url execute failed: %s", resp.StatusCode)
 		return "", err
 	}
 
 	resp.Body.Close()
 
 	if resp.StatusCode != 200 {
+		fmt.Println("status code failed: %s", resp.StatusCode)
 		return "", nil
 	}
 
 	if h.Match != nil && h.Match.MatchString(resp.Request.URL.String()) {
+		fmt.Println("match check failed: %s", resp.Request.URL.String())
 		return "", nil
 	}
 	if(un=="")
