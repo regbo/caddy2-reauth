@@ -28,6 +28,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"net/http"
+	"net/url"
 	"time"
 	"log"
 	"github.com/regbo/caddy2-reauth/backends"
@@ -138,31 +139,31 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 }
 
 func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
-	
+	query := req.URL.Query();
 	if h.isForwardHeadersWildcard(org,req) {
-		copyRequestHeaders(org, req, "*")	
+		copyRequestHeaders(org, query, "*")	
 	}else{
 		for _, header := range h.Forward.Headers {
-			copyRequestHeaders(org, req, header)	
+			copyRequestHeaders(org, query, header)	
 		}
 	}
 		
 	if h.Forward.Host {
-		req.Header.Add("X-Forward-Auth-Host", org.Host)
+		query.Add("host", org.Host)
 	}
 
 	if h.Forward.RequestURI {
-		req.Header.Add("X-Forward-Auth-Requesturi", org.RequestURI)
+		query.Add("requestURI", org.RequestURI)
 	}
 
 	if h.Forward.Method {
-		req.Header.Add("X-Forward-Auth-Method", org.Method)
+		query.Add("method", org.Method)
 	}
 
 	if h.Forward.IP {
-		req.Header.Add("X-Forward-Auth-IP", org.RemoteAddr)
+		query.Add("ip", org.RemoteAddr)
 	}
-	
+	req.URL.RawQuery=query.encode()
 
 }
 
@@ -176,17 +177,17 @@ func (h Upstream) isForwardHeadersWildcard(org *http.Request, req *http.Request)
 	return false
 }
 
-func copyRequestHeaders(org *http.Request, req *http.Request, nameFilter string) {
+func copyRequestHeaders(org *http.Request, query *URL.Values, nameFilter string) {
 	if nameFilter == "*" {
 		for name, values := range org.Header {
 			for _, value := range values {
-				req.Header.Add("X-Forward-Auth-Header-"+name, value)
+				query.Add("header-"+name, value)
 			}
 		}
 
 	} else {
 		for _, value := range org.Header.Values(nameFilter) {
-			req.Header.Add("X-Forward-Auth-Header-"+nameFilter, value)
+					query.Add("header-"+nameFilter, value)
 		}
 	}
 
