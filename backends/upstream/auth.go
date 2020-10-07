@@ -163,7 +163,7 @@ func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
 	if h.Forward.IP {
 		query.Add("ip", org.RemoteAddr)
 	}
-	req.URL.RawQuery=query.encode()
+	req.URL.RawQuery=query.Encode()
 
 }
 
