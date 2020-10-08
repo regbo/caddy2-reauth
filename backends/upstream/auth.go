@@ -87,8 +87,6 @@ func (h Upstream) Validate() error {
 
 // Authenticate fulfils the backend interface
 func (h Upstream) Authenticate(r *http.Request) (string, error) {
-	un:="unknown"
-	
 	c := &http.Client{
 		Timeout: h.Timeout.Duration,
 	}
@@ -124,10 +122,7 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 		log.Printf("match check failed: %s", resp.Request.URL.String())
 		return "", nil
 	}
-	if(un==""){
-		return "unknown", nil
-	}
-	return un, nil
+	return "unknown", nil
 }
 
 func (h Upstream) copyRequest(org *http.Request, data url.Values) {
