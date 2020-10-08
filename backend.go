@@ -10,6 +10,7 @@ import (
 	"github.com/regbo/caddy2-reauth/backends/ldap"
 	"github.com/regbo/caddy2-reauth/backends/simple"
 	"github.com/regbo/caddy2-reauth/backends/upstream"
+	"github.com/regbo/caddy2-reauth/backends/jwk"
 )
 
 // Backend is an authentication backend.
@@ -55,6 +56,8 @@ func (b *Backend) UnmarshalJSON(data []byte) error {
 	case simple.BackendName:
 		driver = simple.NewDriver()
 	case upstream.BackendName:
+		driver = upstream.NewDriver()
+	case jwk.BackendName:
 		driver = upstream.NewDriver()
 	default:
 		return fmt.Errorf("invalid reauth configuration, error: unknown backend %q, config: %s", backend.Type, data)

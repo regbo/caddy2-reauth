@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package main
+package jwk
 
 import (
 	"encoding/json"
@@ -44,7 +44,8 @@ import (
 
 // Interface guard
 var _ backends.Driver = (*Jwk)(nil)
-
+// BackendName name
+const BackendName = "jwk"
 // Jwk
 type Jwk struct {
 	TokenName               string        `json:"token_name,omitempty"`
@@ -362,13 +363,3 @@ func addToJwkSet(jwkSet *jose.JSONWebKeySet, url *url.URL) error {
 	return nil
 }
 
-func main() {
-	h := NewDriver()
-	h.AuthorizedIssuersRegexP = append(h.AuthorizedIssuersRegexP, ".*")
-	claimFilter := ClaimFilter{Name: "groupIds", Values: []string{"30005a79-7bac-4d71-b7ee-ecb756a7c216"}}
-	h.ClaimFilters = []ClaimFilter{claimFilter}
-	h.DebugLog = true
-	jwtStr := "eyJraWQiOiIwOGFhMG16bzh1czdvdDVlMHE0YjhnYnc5IiwiYWxnIjoiUlM1MTIifQ.eyJpYXQiOjE2MDIxNjc2ODYsInN1YiI6ImF1dGgwfDU5OWRlN2FlMzFlYzA4NmEyYTEzZGUzYSIsImdyb3VwSWRzIjpbIjg2ZmJmMDAzLTg0OGUtNDgzYS04ZjE0LWE2YTZjMzk5NTM5OSIsIjMwMDA1YTc5LTdiYWMtNGQ3MS1iN2VlLWVjYjc1NmE3YzIxNiIsImQ1ZjFiOTM4LWUyZGQtNDJkZi05MjIwLTg0ZDNjMTBiZjE4ZCIsIjRjZDM0M2NmLTllMGItNDI2ZC1iOWE0LTJkMjc0NDkzOWFhNSJdLCJAY2xhc3NfdHlwZSI6ImNvbS5sZnAuYXV0aC5zZXJ2aWNlLnVzZXIuVXNlciIsImV4cCI6MTYwMjc3MjQ4NiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmlwbGFzc28uY29tLyJ9.YTbUblmGHldy-LhEvJF8XkPq5lLwSU_dYuosOXLEtpxB3friG9I0LAjGOfOHJvl0YX5wsDqOXzWrWjMKyeUXQFjtcjt8tLWg-GRYPSgLMfzU-_VtqOlWYPgbOEPXrtOkvJKVXrsbqXC-ykvE8S4D4-7R6IvK4HgfIrgLtdp5GMPUszrMYAslOlvU6VaTIxhr_tvGvdGC86mIWgqbuhIC6pLnvbkVxBKJketjYTm8-1Mq9ICeaUkiDpXFpWZSpD9giUSYEehsY9HWgYTANXj2WkqL37v_amepaHqxUZwojs_wMllEYUpdYu2f5sfHwHz8Qzij1R3577VSUXEWhYlAyH1Px3DCaQbTgjubxhou8Xk2FghybJFJRyHNZ7aCkXU3v4n13XP11sQK5qHPIxRmtRUir8P4JHXf3TByFvwRsEzj6OkObo5maZvWyhLH7PyYEl5j5ydabDUcyl0qTnSDbexjgkkOaE_8tME_xZTA4930cdYDWI57tRQBI5VBQGSHXKTUYXaIXKqmpYL8KHM81_pBwvzZYLy69SKSY_zRE0g2DEDx3895-jxBThh3Ffenf32PI0FItYJXC9jDp7w5zVRRiQYK_xFC-zsDQwbLeQU_LmMjpeO5M3YHtHCCqztZc6ZnIigs_0uyBkQr4CefE_YShlMk1jhvWH_JUbe1Eps"
-	result := h.validateCandidate(jwtStr)
-	fmt.Print(result)
-}
