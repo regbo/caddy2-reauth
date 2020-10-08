@@ -1,0 +1,141 @@
+{
+	"storage": {
+		"module": "file_system",
+		"root": "./storage"
+	},
+	"logging": {
+		"logs": {
+			"default": {
+				"level": "DEBUG"
+			}
+		}
+	},
+	"apps": {
+		"tls": {
+			"certificates": {
+				"automate": ["*.regbo.duckdns.org", "regbo.duckdns.org"]
+			},
+			"automation": {
+				"policies": [{
+						"issuer": {
+							"module": "acme",
+							"challenges": {
+								"dns": {
+									"provider": {
+										"name": "lego_deprecated",
+										"provider_name": "duckdns"
+									}
+								},
+								"http": {
+									"disabled": true
+								}
+							}
+
+						},
+						"key_type": "rsa4096"
+					}
+				]
+			}
+		},
+		"http": {
+			"http_port": 8880,
+			"servers": {
+				"server0": {
+					"listen": ["localhost:8443"],
+					"automatic_https": {
+						"skip_certificates": ["wowneat.regbo.duckdns.org"]
+					},
+					"routes": [{
+							"match": [{
+									"host": ["wowneat.regbo.duckdns.org"]
+								}
+							],
+							"handle": [{
+									"handler": "authentication",
+									"providers": {
+										"reauth": {
+											"backends": [{
+													"type": "jwk",
+													"debug": true,
+													"authorized_issuers_regexp": ["^https://coolbeans.com/?"],
+													"claim_filter": []
+												}
+											],
+                                            "failure": {
+                                                "mode": "status",
+                                                "code": 403
+                                            }
+										}
+									}
+								}, {
+									"handler": "reverse_proxy",
+									"transport": {
+										"protocol": "http"
+									},
+									"upstreams": [{
+											"dial": "localhost:8080"
+										}
+									]
+								}
+							],
+							"terminal": true
+						}
+					]
+				}
+			}
+		},
+		"layer4": {
+			"servers": {
+				"layer4-srv0": {
+					"listen": ["0.0.0.0:6969"],
+					"routes": [{
+							"match": [{
+									"tls": {
+										"sni": ["mongo.regbo.duckdns.org"]
+									}
+								}
+							],
+							"handle": [{
+									"handler": "tls"
+								}, {
+									"handler": "proxy",
+									"upstreams": [{
+											"dial": ["localhost:27017"]
+										}
+									]
+								}
+							]
+						}, {
+							"match": [{
+									"tls": {
+										"sni": ["redis.regbo.duckdns.org"]
+									}
+								}
+							],
+							"handle": [{
+									"handler": "tls"
+								}, {
+									"handler": "proxy",
+									"upstreams": [{
+											"dial": ["localhost:6379"]
+										}
+									]
+								}
+							]
+						}, {
+							"handle": [{
+									"handler": "proxy",
+									"upstreams": [{
+											"dial": ["localhost:8443"]
+										}
+									]
+								}
+							]
+						}
+					]
+				}
+			}
+		}
+
+	}
+}
