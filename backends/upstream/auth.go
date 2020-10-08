@@ -28,6 +28,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"net/http"
+	"net/url"
 	"time"
 	"log"
 	"github.com/regbo/caddy2-reauth/backends"
@@ -50,11 +51,10 @@ type Upstream struct {
 	Timeout            jsontypes.Duration `json:"timeout,omitempty"`
 	InsecureSkipVerify bool               `json:"insecure_skip_verify,omitempty"`
 	FollowRedirects    bool               `json:"follow_redirects,omitempty"`
-	PassCookies        bool               `json:"pass_cookies,omitempty"`
 	Match              *jsontypes.Regexp  `json:"match,omitempty"`
-
 	Forward struct {
-		URL     bool     `json:"url,omitempty"`
+		RequestURI     bool     `json:"request_uri,omitempty"`
+		Host     bool     `json:"host,omitempty"`
 		Method  bool     `json:"method,omitempty"`
 		IP      bool     `json:"ip,omitempty"`
 		Headers []string `json:"headers,omitempty"`
@@ -87,7 +87,7 @@ func (h Upstream) Validate() error {
 
 // Authenticate fulfils the backend interface
 func (h Upstream) Authenticate(r *http.Request) (string, error) {
-	un, pw, k := r.BasicAuth()
+	un:="unknown"
 	
 	c := &http.Client{
 		Timeout: h.Timeout.Duration,
@@ -102,20 +102,12 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 	}
+	
+	data := url.Values{}
+	h.copyRequest(r, data)
+	
+	resp, err := http.PostForm(h.URL.String(), data)
 
-	req, err := http.NewRequest("GET", h.URL.String(), nil)
-	if err != nil {
-		log.Printf("new request failed: %s",  h.URL.String())
-		return "", err
-	}
-
-	if k {
-		req.SetBasicAuth(un, pw)
-	}
-
-	h.copyRequest(r, req)
-
-	resp, err := c.Do(req)
 	if err != nil {
 		log.Printf("url execute failed: %s", resp.StatusCode)
 		return "", err
@@ -132,33 +124,61 @@ func (h Upstream) Authenticate(r *http.Request) (string, error) {
 		log.Printf("match check failed: %s", resp.Request.URL.String())
 		return "", nil
 	}
-	if(un=="")
-		un="unknown"
+	if(un==""){
+		return "unknown", nil
+	}
 	return un, nil
 }
 
-func (h Upstream) copyRequest(org *http.Request, req *http.Request) {
-	if h.PassCookies {
-		for _, c := range org.Cookies() {
-			req.AddCookie(c)
+func (h Upstream) copyRequest(org *http.Request, data url.Values) {
+	if h.isForwardHeadersWildcard() {
+		copyRequestHeaders(org, data, "*")	
+	}else{
+		for _, header := range h.Forward.Headers {
+			copyRequestHeaders(org, data, header)	
 		}
 	}
+		
+	if h.Forward.Host {
+		data.Add("host", org.Host)
+	}
 
-	if h.Forward.URL {
-		req.Header.Add("X-Auth-URL", org.RequestURI)
+	if h.Forward.RequestURI {
+		data.Add("requestURI", org.RequestURI)
 	}
 
 	if h.Forward.Method {
-		req.Header.Add("X-Auth-Method", org.Method)
+		data.Add("method", org.Method)
 	}
 
 	if h.Forward.IP {
-		req.Header.Add("X-Auth-IP", org.RemoteAddr)
+		data.Add("ip", org.RemoteAddr)
 	}
 
+}
+
+func (h Upstream) isForwardHeadersWildcard() bool {
 	for _, header := range h.Forward.Headers {
-		if tmp := org.Header.Get(header); tmp != "" {
-			req.Header.Add("X-Auth-Header-"+header, tmp)
+		if header == "*" {
+			return true
 		}
 	}
+
+	return false
+}
+
+func copyRequestHeaders(org *http.Request, data url.Values, nameFilter string) {
+	if nameFilter == "*" {
+		for name, values := range org.Header {
+			for _, value := range values {
+				data.Add("header-"+name, value)
+			}
+		}
+
+	} else {
+		for _, value := range org.Header.Values(nameFilter) {
+					data.Add("header-"+nameFilter, value)
+		}
+	}
+
 }
