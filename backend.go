@@ -58,7 +58,7 @@ func (b *Backend) UnmarshalJSON(data []byte) error {
 	case upstream.BackendName:
 		driver = upstream.NewDriver()
 	case jwk.BackendName:
-		driver = upstream.NewDriver()
+		driver = jwk.NewDriver()
 	default:
 		return fmt.Errorf("invalid reauth configuration, error: unknown backend %q, config: %s", backend.Type, data)
 	}

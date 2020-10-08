@@ -44,8 +44,10 @@ import (
 
 // Interface guard
 var _ backends.Driver = (*Jwk)(nil)
+
 // BackendName name
 const BackendName = "jwk"
+
 // Jwk
 type Jwk struct {
 	TokenName               string        `json:"token_name,omitempty"`
@@ -53,15 +55,15 @@ type Jwk struct {
 	AuthorizedIssuersRegexP []string      `json:"authorized_issuers_regexp,omitempty"`
 	JwkCacheDuration        int64         `json:"jwk_cache_duration,omitempty"`
 	WellKnownPath           string        `json:"well_known_path,omitempty"`
-	DebugLog                bool          `json:"debug_log,omitempty"`
-	ClaimFilters            []ClaimFilter `json:"claim_filters"`
+	Debug                   bool          `json:"debug,omitempty"`
+	ClaimFilters            []ClaimFilter `json:"claim_filter"`
 	jwkCache                *ttlcache.Cache
 	sync.Mutex
 }
 
 type ClaimFilter struct {
 	Name   string   `json:"name,omitempty"`
-	Values []string `json:"values,omitempty"`
+	Values []string `json:"value,omitempty"`
 }
 
 // NewDriver returns a new instance of Jwk with some defaults
@@ -72,6 +74,7 @@ func NewDriver() *Jwk {
 		AuthorizedIssuersRegexP: []string{},
 		JwkCacheDuration:        10 * 1000,
 		WellKnownPath:           "/.well-known/jwks.json",
+		ClaimFilters:            []ClaimFilter{},
 	}
 }
 
@@ -118,8 +121,15 @@ func (h *Jwk) Authenticate(r *http.Request) (string, error) {
 			candidates = append(candidates, query.Get(h.TokenName))
 		}
 	}
+	validated := false
 	for _, v := range candidates {
-		h.validateCandidate(v)
+		if h.validateCandidate(v) {
+			validated = true
+			break
+		}
+	}
+	if !validated {
+		return "", nil
 	}
 	return "unknown", nil
 }
@@ -130,25 +140,19 @@ func (h *Jwk) validateCandidate(jwtStr string) bool {
 	}
 	parsedJwt, err := jwt.ParseSigned(jwtStr)
 	if err != nil {
-		if h.DebugLog {
-			log.Print(err)
-		}
+		h.debugLog(err)
 		return false
 	}
 	issuerUrl, err := h.getIssuerUrl(parsedJwt)
 	if err != nil {
-		if h.DebugLog {
-			log.Print(err)
-		}
+		h.debugLog(err)
 		return false
 	}
 	var jwkSet jose.JSONWebKeySet
 	{ //lookup jwk set
 		cached, err := h.getOrInitCache().Get(issuerUrl.String())
 		if err != nil {
-			if h.DebugLog {
-				log.Print(err)
-			}
+			h.debugLog(err)
 			return false
 		}
 		jwkSet = cached.(jose.JSONWebKeySet)
@@ -156,9 +160,7 @@ func (h *Jwk) validateCandidate(jwtStr string) bool {
 	{ //validate with  jwk set
 		_, err := h.validate(jwtStr, parsedJwt, jwkSet)
 		if err != nil {
-			if h.DebugLog {
-				log.Print(err)
-			}
+			h.debugLog(err)
 			return false
 		}
 	}
@@ -214,13 +216,13 @@ func (h *Jwk) validate(jwtStr string, jwt *jwt.JSONWebToken, jwkSet jose.JSONWeb
 			continue
 		}
 		_, err := jwtSig.Verify(key)
-		if err != nil && h.DebugLog {
-			log.Printf("failed to verify jwt: %s", err)
+		if err != nil {
+			h.debugLogF("failed to verify jwt: %s", err)
 			continue
 		}
 		err = h.validateClaims(jwt, key)
-		if err != nil && h.DebugLog {
-			log.Printf("failed to verify claims: %s", err)
+		if err != nil {
+			h.debugLogF("failed to verify claims: %s", err)
 			continue
 		}
 		return jwtSig, nil
@@ -229,6 +231,7 @@ func (h *Jwk) validate(jwtStr string, jwt *jwt.JSONWebToken, jwkSet jose.JSONWeb
 }
 func (h *Jwk) validateClaims(jwt *jwt.JSONWebToken, key jose.JSONWebKey) error {
 	if h.ClaimFilters == nil || len(h.ClaimFilters) == 0 {
+		h.debugLog("claim filters skipped")
 		return nil
 	}
 	claimData := make(map[string]interface{})
@@ -241,10 +244,8 @@ func (h *Jwk) validateClaims(jwt *jwt.JSONWebToken, key jose.JSONWebKey) error {
 		var claimValues []string
 		switch x := claimObj.(type) {
 		case string:
-			log.Print(x)
 			claimValues = append(claimValues, x)
 		case []interface{}:
-			log.Print(x)
 			for _, v := range x {
 				claimValues = append(claimValues, fmt.Sprintf("%s", v))
 			}
@@ -257,6 +258,7 @@ func (h *Jwk) validateClaims(jwt *jwt.JSONWebToken, key jose.JSONWebKey) error {
 		for _, filterValue := range claim.Values {
 			for _, claimValue := range claimValues {
 				if filterValue == claimValue {
+					h.debugLogF("claims match. name:%s value:%s found:%s", claim.Name, filterValue, claimValue)
 					return nil
 				}
 			}
@@ -274,15 +276,15 @@ func (h *Jwk) getJwkSetFresh(issuerUrl *url.URL) jose.JSONWebKeySet {
 			attemptUrl = issuerUrl
 		} else {
 			urlWellKnown, err := h.getIssuerUrlWellKnown(issuerUrl)
-			if err != nil && h.DebugLog {
-				log.Print(err)
+			if err != nil {
+				h.debugLog(err)
 				continue
 			}
 			attemptUrl = urlWellKnown
 		}
 		err := addToJwkSet(&jwkSet, attemptUrl)
-		if err != nil && h.DebugLog {
-			log.Print(err)
+		if err != nil {
+			h.debugLog(err)
 		}
 	}
 	return jwkSet
@@ -338,6 +340,17 @@ func (h *Jwk) getIssuerUrlWellKnown(issuerUrl *url.URL) (*url.URL, error) {
 	return issuerUrlWellKnown, nil
 }
 
+func (h Jwk) debugLog(v interface{}) {
+	h.debugLogF("%s", v)
+}
+
+func (h Jwk) debugLogF(format string, v ...interface{}) {
+	if !h.Debug {
+		return
+	}
+	log.Printf(format, v)
+}
+
 func addToJwkSet(jwkSet *jose.JSONWebKeySet, url *url.URL) error {
 	if url == nil {
 		return errors.New("url is required")
@@ -362,4 +375,3 @@ func addToJwkSet(jwkSet *jose.JSONWebKeySet, url *url.URL) error {
 	}
 	return nil
 }
-
