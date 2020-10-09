@@ -2,11 +2,11 @@ package reauth
 
 import (
 	"fmt"
-	"net/http"
-	"log"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp/caddyauth"
 	"go.uber.org/zap"
+	"log"
+	"net/http"
 )
 
 func init() {

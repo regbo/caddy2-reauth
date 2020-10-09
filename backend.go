@@ -7,10 +7,10 @@ import (
 
 	"github.com/regbo/caddy2-reauth/backends"
 	"github.com/regbo/caddy2-reauth/backends/gitlabci"
+	"github.com/regbo/caddy2-reauth/backends/jwk"
 	"github.com/regbo/caddy2-reauth/backends/ldap"
 	"github.com/regbo/caddy2-reauth/backends/simple"
 	"github.com/regbo/caddy2-reauth/backends/upstream"
-	"github.com/regbo/caddy2-reauth/backends/jwk"
 )
 
 // Backend is an authentication backend.
