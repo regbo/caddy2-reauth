@@ -176,6 +176,7 @@ func (h *Jwk) getOrInitCache() *ttlcache.Cache {
 			if h.JwkCacheDuration < 0 {
 				panic(errors.New("invalid jwk cache duration"))
 			}
+			cache.SkipTTLExtensionOnHit(true)
 			_ = cache.SetTTL(time.Millisecond * time.Duration(h.JwkCacheDuration))
 			cache.SetLoaderFunction(h.cacheLoad)
 			h.jwkCache = cache
