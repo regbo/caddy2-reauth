@@ -47,6 +47,7 @@ var _ backends.Driver = (*Jwk)(nil)
 
 // BackendName name
 const BackendName = "jwk"
+const BearerPrefix = "bearer "
 
 // Jwk
 type Jwk struct {
@@ -135,9 +136,15 @@ func (h *Jwk) Authenticate(r *http.Request) (string, error) {
 }
 
 func (h *Jwk) validateCandidate(jwtStr string) bool {
+	if strings.HasPrefix(strings.ToLower(jwtStr), BearerPrefix) {
+		jwtStrRune := []rune(jwtStr)
+		jwtStr = string(jwtStrRune[len(BearerPrefix):len(jwtStrRune)])
+	}
+	jwtStr = strings.TrimSpace(jwtStr)
 	if jwtStr == "" {
 		return false
 	}
+
 	parsedJwt, err := jwt.ParseSigned(jwtStr)
 	if err != nil {
 		h.debugLog(err)
